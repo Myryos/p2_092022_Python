@@ -6,10 +6,14 @@ BASE_URL = 'http://books.toscrape.com/'
 
 def getSoup(url):
     req = requests.get(url)
-    return BeautifulSoup(req.content, 'html5lib')
+    return BeautifulSoup(req.content, 'html.parser')
 def newURL(str):
     array = str.split('/')
     return BASE_URL+array[4]+'/'+array[5]+'/'+array[6]+'/'+array[7]+'/'
+
+def noTag(str):
+
+    return str.get_text()
 
 def getNavLinks(url):
     links = []
@@ -35,12 +39,15 @@ def getAllLinksBook(url):
 
 def scrapPage(url):
     soup = getSoup(url)
-
-    allLine = soup.findAll('tr')
-
-    for line in allLine:
-        print(line.findAll('td'))
     
+
+    for line in soup.findAll('tr'):
+        for child in line.findAll('th'):
+            if child.next_sibling is not None:
+                print(child.next_element + child.find_next_sibling('td').get_text())
+    return 0
+
+def writeCSV(array):
     return 0
 
 
