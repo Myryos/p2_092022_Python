@@ -1,23 +1,41 @@
+import string
+from types import NoneType
+from urllib.parse import urlparse, urljoin
 from webbrowser import get
 from bs4 import BeautifulSoup
 import requests, sys
 
 BASE_URL = 'http://books.toscrape.com/'
 
-def getSoup(url):
+
+
+def get_soup(url):
     req = requests.get(url)
     return BeautifulSoup(req.content, 'html.parser')
-def newURL(str):
-    array = str.split('/')
-    return BASE_URL+array[4]+'/'+array[5]+'/'+array[6]+'/'+array[7]+'/'
 
-def noTag(str):
+def no_tag(str):
 
     return str.get_text()
 
-def getNavLinks(url):
+def get_rating(str):
+
+    r = 0
+
+    if str == 'One':
+        r = 1
+    if str == 'Two':
+        r = 2
+    if str == 'Three':
+        r = 3
+    if str == 'Four':
+        r = 4
+    if str == 'Five':
+        r = 5
+    return r 
+
+def get_navlinks(url):
     links = []
-    soup = getSoup(url)
+    soup = get_soup(url)
     navList = soup.find(class_='nav').find('li').find('ul').find_all('li')
     
     for nav in navList:
@@ -25,31 +43,66 @@ def getNavLinks(url):
     return links
 
 
-def getAllLinksBook(url):
-    newUrl = newURL(url)
-    soup = getSoup(url)
+def get_all_links_book(url):
+    newUrl = urljoin(BASE_URL, url)
+    soup = get_soup(url)
+
+    dict_book ={}
+    x = 0
 
     for title in soup.findAll('h3'):
-        scrapPage(BASE_URL + 'catalogue/' + title.find('a')['href'].split('/')[3])
+        """"
+        catalogue_url = urljoin(BASE_URL, "catalogue/")
+        print(catalogue_url)
+        print("Test : " + urljoin(CATALOGE_URL, title.find('a')['href']))
+        scrap_page(urljoin(BASE_URL + "catalogue/", title.find('a')['href']))
+        """
+
+        ##print(BASE_URL + 'catalogue/' + title.find('a')['href'].split('/')[3])
+        dict_book["Livre #"+str(x)] = scrap_page(BASE_URL + 'catalogue/' + title.find('a')['href'].split('/')[3])
+        ##print("Ca marche : " + str(x))
+        x += 1 
    
     if soup.find(class_='next') is not None:
-        getAllLinksBook(newUrl + soup.find(class_='next').find('a')['href'])
-    
+        get_all_links_book(newUrl + soup.find(class_='next').find('a')['href'])
+    print(dict_book)
     return 0
 
-def scrapPage(url):
-    soup = getSoup(url)
-    
+def scrap_page(url):
+    soup = get_soup(url)
 
-    for line in soup.findAll('tr'):
-        for child in line.findAll('th'):
-            if child.next_sibling is not None:
-                print(child.next_element + child.find_next_sibling('td').get_text())
+    title = soup.find('h1').get_text()
+    product_dscp = ""
+    rating = 0
+    category = soup.find(class_='breadcrumb').find_all('li')[2].get_text()
+    img_url = urljoin(BASE_URL, soup.find(class_='item active').find('img')['src'])
+
+    star_ratings = soup.find(class_='star-rating')['class']
+
+    rating = get_rating(star_ratings[1])
+
+    if soup.find(id='product_description') is not None:
+        product_dscp = soup.find(id='product_description').find_next('p').get_text()
+
+    dict_scraped = {
+        "product_page_url": url, 
+        "title": title, 
+        "product_description": product_dscp,
+        "catagory":category,
+        "review_rating": rating,
+        "image_url":img_url
+        }
+    for child in soup.findAll('th'):
+        if child.next_sibling is not None:
+            dict_scraped[child.get_text()] = child.find_next_sibling('td').get_text()
+    return dict_scraped
+
+def write_csv(array):
     return 0
 
-def writeCSV(array):
-    return 0
 
+for nav in get_navlinks(BASE_URL + 'index.html'):
+    get_all_links_book(BASE_URL + nav) 
 
-for nav in getNavLinks(BASE_URL + 'index.html'):
-    getAllLinksBook(BASE_URL + nav)
+    ## passe du camelCame to snake_case
+    ## Finir l'ecriture du scrap page renvois un dictionnaire d'un book
