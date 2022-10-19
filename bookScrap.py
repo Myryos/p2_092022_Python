@@ -1,8 +1,7 @@
 import csv
-from urllib.parse import urlparse, urljoin
-from webbrowser import get
+from urllib.parse import  urljoin
 from bs4 import BeautifulSoup
-import requests, sys, os
+import requests, os
 
 BASE_URL = 'http://books.toscrape.com/'
 
@@ -45,16 +44,7 @@ def get_books_scraped(url):
     dict_book = []
 
     for title in soup.findAll('h3'):
-        """"
-        catalogue_url = urljoin(BASE_URL, "catalogue/")
-        print(catalogue_url)
-        print("Test : " + urljoin(CATALOGE_URL, title.find('a')['href']))
-        scrap_page(urljoin(BASE_URL + "catalogue/", title.find('a')['href']))
-    
-        """
-        ##print(BASE_URL + 'catalogue/' + title.find('a')['href'].split('/')[3])
         dict_book.append(scrape_page(urljoin(url, title.find('a')['href']), category))
-        ##print("Ca marche : " + str(x))
    
     if soup.find(class_='next') is not None:
         """print(f"{BASE_URL = }" )
@@ -77,13 +67,6 @@ def scrape_page(url, category):
 
     if soup.find(id='product_description') is not None:
          product_description = soup.find(id='product_description').find_next('p').get_text()
-    
-    """print("URL : " + url)
-    print("Titre : " + title)
-    print("Desc : " + product_dscp)
-    print("Catagory : " + category)
-    print("Rating : " + str(rating))
-    print("Img_URL : " + img_url)"""
 
     scraped_data = {
         "product_page_url": url, 
@@ -93,7 +76,6 @@ def scrape_page(url, category):
         "review_rating": rating,
         "image_url":img_url
         }
-    ##print(scraped_data)
     for child in soup.findAll('th'):
         if child.next_sibling is not None:
             brother = child.find_next_sibling('td').get_text()
@@ -188,7 +170,5 @@ for nav in get_navlinks(BASE_URL + 'index.html'):
 
 for books in books_scraped:
     for book in books:
-        print(os.getcwd())
         dl_image(book['image_url'], book['title'])
-        print(os.getcwd())
         write_csv(book)
