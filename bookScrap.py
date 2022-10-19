@@ -2,7 +2,7 @@ import csv
 from urllib.parse import urlparse, urljoin
 from webbrowser import get
 from bs4 import BeautifulSoup
-import requests, sys
+import requests, sys, os
 
 BASE_URL = 'http://books.toscrape.com/'
 
@@ -38,7 +38,7 @@ def get_navlinks(url):
     return links
 
 
-def all_links_book(url):
+def get_books_scraped(url):
     soup = get_soup(url)
     category = soup.find('h1').get_text()
 
@@ -53,9 +53,6 @@ def all_links_book(url):
     
         """
         ##print(BASE_URL + 'catalogue/' + title.find('a')['href'].split('/')[3])
-        print(f"{url=}")
-        print(f"{title.find('a')['href']=}")
-        print(f"{urljoin(url, title.find('a')['href'])=}")
         dict_book.append(scrape_page(urljoin(url, title.find('a')['href']), category))
         ##print("Ca marche : " + str(x))
    
@@ -63,8 +60,9 @@ def all_links_book(url):
         """print(f"{BASE_URL = }" )
         print(f"{url =}")
         print(f"{urljoin(url, soup.find(class_='next').find('a')['href']) = }")""" ##Exemple a garder !
-        all_links_book(urljoin(url, soup.find(class_='next').find('a')['href']))
-    write_csv(dict_book, category)
+        get_books_scraped(urljoin(url, soup.find(class_='next').find('a')['href']))
+    ##write_csv(dict_book, category)
+    return dict_book
 
 def scrape_page(url, category):
     soup = get_soup(url)
@@ -104,36 +102,93 @@ def scrape_page(url, category):
             scraped_data[child.get_text()] = brother
     return scraped_data
 
-def write_csv(books, category):
-    with open(f"{category}.csv", 'w') as csvfile:
-        fiednames = [
-            'product_page_url', 
-            'universal_ product_code', 
-            'title',
-            'price_including_tax',
-            'price_excluding_tax',
-            'number_available',
-            'product_description',
-            'category',
-            'review_rating',
-            'image_url'
-            ]
-        writer = csv.DictWriter(csvfile, fieldnames=fiednames)
-
-        writer.writeheader()
-        for book in books:
+def write_csv(book):
+    if not os.path.exists("datas"):
+        os.mkdir("datas")
+    if os.getcwd() != "/Users/herve/OC Project/p2_092022_Python/datas":
+        os.chdir('datas')
+    mode = ''
+    if os.path.isfile(f"{book['category']}.csv"):
+        mode = 'a'
+        with open(f"{book['category']}.csv", mode) as csvfile:
+            fiednames = [
+                'product_page_url', 
+                'universal_ product_code', 
+                'title',
+                'price_including_tax',
+                'price_excluding_tax',
+                'number_available',
+                'product_description',
+                'category',
+                'review_rating',
+                'image_url'
+                ]
+            writer = csv.DictWriter(csvfile, fieldnames=fiednames)
             writer.writerow({
-            'product_page_url': book['product_page_url'],
-            'universal_ product_code' : book["UPC"],
-            'title': book["title"],
-            'price_including_tax': book["Price (incl. tax)"],
-            'price_excluding_tax': book["Price (excl. tax)"],
-            'number_available': book["Availability"],
-            'product_description': book["product_description"],
-            'category': book["category"],
-            'review_rating':book["review_rating"],
-            'image_url': book['image_url']}),
+                'product_page_url': book['product_page_url'],
+                'universal_ product_code' : book["UPC"],
+                'title': book["title"],
+                'price_including_tax': book["Price (incl. tax)"],
+                'price_excluding_tax': book["Price (excl. tax)"],
+                'number_available': book["Availability"],
+                'product_description': book["product_description"],
+                'category': book["category"],
+                'review_rating':book["review_rating"],
+                'image_url': book['image_url']}),
 
+    else:
+        mode = 'w'
+        with open(f"{book['category']}.csv", mode) as csvfile:
+            fiednames = [
+                'product_page_url', 
+                'universal_ product_code', 
+                'title',
+                'price_including_tax',
+                'price_excluding_tax',
+                'number_available',
+                'product_description',
+                'category',
+                'review_rating',
+                'image_url'
+                ]
+            writer = csv.DictWriter(csvfile, fieldnames=fiednames)
+
+            writer.writeheader()
+        
+            writer.writerow({
+                'product_page_url': book['product_page_url'],
+                'universal_ product_code' : book["UPC"],
+                'title': book["title"],
+                'price_including_tax': book["Price (incl. tax)"],
+                'price_excluding_tax': book["Price (excl. tax)"],
+                'number_available': book["Availability"],
+                'product_description': book["product_description"],
+                'category': book["category"],
+                'review_rating':book["review_rating"],
+                'image_url': book['image_url']}),
+    os.chdir("../")
+
+def dl_image(url, title):
+    if not os.path.exists("medias"):
+        os.mkdir("medias")
+    if not os.path.exists("medias/images"):
+        os.mkdir("medias/images")
+    if os.getcwd() != "/Users/herve/OC Project/p2_092022_Python/medias/images":
+        os.chdir('medias/images')
+    image = open(f'{title}.jpg', 'wb')
+    response = requests.get(url)
+    image.write(response.content)
+    image.close()
+    os.chdir("../../")
+
+books_scraped = []
 
 for nav in get_navlinks(BASE_URL + 'index.html'):
-    get_all_links_book(BASE_URL + nav) 
+    books_scraped.append(get_books_scraped(BASE_URL + nav))
+
+for books in books_scraped:
+    for book in books:
+        print(os.getcwd())
+        dl_image(book['image_url'], book['title'])
+        print(os.getcwd())
+        write_csv(book)
