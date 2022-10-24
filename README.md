@@ -4,14 +4,21 @@
 
 This is my project #2 from my "Application Developer - Python" project at Openclassroom
 
+## VENV
+In the repo use the following command : 
 
+```
+python3 -m venv <name_of_your_venv>
+```
+
+then activate it : 
+
+```
+source  <name_of_your_venv>/bin/activate
+```
 ## How To Install
 
-Open your terminal
-
-Go the folder you have juste cloned
-
-and use the following command : 
+Use the following command : 
 
 ```
 pip install -r requierements.txt
@@ -20,7 +27,7 @@ pip install -r requierements.txt
 
 ## How To Run 
 
-In the folder just cloned, use one of these following commands :
+To run the scrapper, use one of these following commands :
 
 ```
 python bookScrap.py
