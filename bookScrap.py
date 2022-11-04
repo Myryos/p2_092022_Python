@@ -39,25 +39,21 @@ def get_navlinks(url):
 
 
 def get_all_next_pages(soup):
-    url = []
+    urls = []
     if soup.find(class_="current") is not None:
         test = soup.find(class_="current").get_text()
         test = test.split()
         page_counter = 2
         while page_counter <= int(test[3]):
-            url.append(f"page-{page_counter}.html")
+            urls.append(f"page-{page_counter}.html")
             page_counter += 1
-        return url
+    return urls
 
 
 def get_books_scraped(soup, category, url):
-    dict_book = []
-
     for title in soup.findAll("h3"):
         book_url = urljoin(url, title.find("a")["href"])
-        book_scraped = scrape_page(book_url, category)
-        dict_book.append(book_scraped)
-    return dict_book
+        scrape_page(book_url, category)
 
 
 def scrape_page(url, category):
@@ -65,7 +61,6 @@ def scrape_page(url, category):
     soup = get_soup(url)
     title = soup.find("h1").get_text()
     product_description = ""
-    category = category
     img_url = urljoin(url, soup.find(class_="item active").find("img")["src"])
 
     star_ratings = soup.find(class_="star-rating")["class"]
@@ -91,8 +86,9 @@ def scrape_page(url, category):
             if child.get_text() == "Availability":
                 brother = brother.split(" ")[2].split("(")[1]
             scraped_data[child.get_text()] = brother
-    return scraped_data
-
+    
+    download_image(scraped_data["image_url"], scraped_data["title"])
+    write_csv(scraped_data)
 
 def write_csv(book):
     """Create a CSV File or open an CSV File and add datas from books"""
@@ -154,25 +150,17 @@ def init_folders():
 
 
 def start_scraping():
-    books_scraped = []
-
-    for nav in get_navlinks(BASE_URL + "index.html"):
+    url_init = urljoin(BASE_URL, "index.html")
+    for nav in get_navlinks(url_init):
         url_nav = urljoin(BASE_URL, nav)
         soup = get_soup(url_nav)
         category = soup.find("h1").get_text()
         next_pages = get_all_next_pages(soup)
-        books_scraped.append(get_books_scraped(soup, category, url_nav))
-        if next_pages is not None:
-            for page in next_pages:
-                url_page = urljoin(url_nav, page)
-                soup = get_soup(url_page)
-                books_scraped.append(get_books_scraped(soup, category, url_nav))
-
-    for books in books_scraped:
-        for book in books:
-            download_image(book["image_url"], book["title"])
-            write_csv(book)
-
+        get_books_scraped(soup, category, url_nav)
+        for page in next_pages:
+            url_page = urljoin(url_nav, page)
+            soup = get_soup(url_page)
+            get_books_scraped(soup, category, url_nav)
 
 init_folders()
 start_scraping()
